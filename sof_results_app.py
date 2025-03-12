@@ -50,7 +50,7 @@ st.markdown(
     }
     /* Adjust the sidebar width */
     .css-1d391kg {
-        width: 180px;  /* Adjust the value as needed */
+        width: 140px;  /* Adjust the value as needed */
     }
     .title-container {
         display: flex;

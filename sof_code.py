@@ -378,7 +378,7 @@ show_australia = st.sidebar.checkbox('Show only Australians', value=True)
 selected_gender = st.sidebar.radio('Select Gender', options=['All', 'Male', 'Female'], index=0)
 st.markdown("</br>", unsafe_allow_html=True)    
 
-# st.markdown(
+st.markdown(
     """<style>
 div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
     font-size: 18px;

@@ -13,8 +13,7 @@ from sqlalchemy import create_engine
 import pandas as pd
 import streamlit as st
 import plotly.express as px
-#import pandasql as psql
-#import duckdb
+
 
 
 def clean_column_names(df):
@@ -26,11 +25,11 @@ def clean_column_names(df):
     )
     return df
 
-# st.logo(
-#     "AusTriathlon-Logo-500px.png",
-#     link="https://www.triathlon.org.au/",
-#     size="large"
-# )
+st.logo(
+    "AusTriathlon-Logo-500px.png",
+    link="https://www.triathlon.org.au/",
+    size="large"
+)
 
 # Set page config to use the full width of the screen
 st.set_page_config(layout="wide")
@@ -85,13 +84,14 @@ st.markdown("</br>", unsafe_allow_html=True)
 
 # Connect to Snowflake
 # Define connection parameters
-username = 'TRIATHLON_SERVICE_ACCOUNT'
-password = 't9fUgNSiL0uEvAgL5hpMaE9aTI0kDykvGC1FopF8jdfK'
-account = 'se62228.ap-southeast-2'
-database = 'PRODUCTION'
-schema = 'TRIATHLON'
-warehouse = 'COMPUTE_WH'
-role = 'TRIATHLON_ACCESS'
+# Access secrets
+username = st.secrets["database"]["username"]
+password = st.secrets["database"]["password"]
+account = st.secrets["database"]["account"]
+database = st.secrets["database"]["database"]
+schema = st.secrets["database"]["schema"]
+warehouse = st.secrets["database"]["warehouse"]
+role = st.secrets["database"]["role"]
 
 # Create a connection to the Snowflake database
 engine = create_engine(

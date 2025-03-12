@@ -455,6 +455,12 @@ table_data = table_data.rename(columns=columns_to_rename)
 # Format the 'Date' column to display only year-month-day
 table_data['Date'] = pd.to_datetime(table_data['Date'], format='mixed').dt.strftime('%Y-%m-%d')
 
+display_columns_table1 = [
+    'Race', 'Date', 'Program', 'Race Rank', 'World Rank', 'QOF Score', 
+    'Class', 'NPT Score'
+]
+#display_data = table_data[display_columns]
+
 # Create tabs
 tab1, tab2, tab3 = st.tabs(["NPT Individual Results", "NPT Top 100", "Race Results"])
 
@@ -474,7 +480,7 @@ with tab1:
         st.subheader("Results Table")
         
         # Display the filtered DataFrame
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+        st.dataframe(filtered_df[display_columns_table1], use_container_width=True, hide_index=True)
         st.markdown("</br>", unsafe_allow_html=True)
 
         # Define custom colors for the levels
@@ -638,6 +644,8 @@ with tab3:
         lambda x: pd.to_datetime(x, unit='s').dt.strftime('%H:%M:%S')
     )
 
+    display_columns_table2 = ['Race', 'Date', 'Program', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']
+    
         # Select box for choosing a name
     if filtered_names:  # Only show the selectbox if there are names available
         #selected_name = st.sidebar.selectbox('test',filtered_names, index=default_index, label_visibility='hidden')
@@ -646,7 +654,7 @@ with tab3:
         filtered_df2 = filtered_df[filtered_df['Athlete'] == selected_name]
         
         # Display the filtered DataFrame
-        st.dataframe(filtered_df2, use_container_width=True, hide_index=True)
+        st.dataframe(filtered_df2[display_columns_table2], use_container_width=True, hide_index=True)
         #st.write(filtered_df2.to_html(index=False), unsafe_allow_html=True)
         # Display the filtered DataFrame using AgGrid
         # gb = GridOptionsBuilder.from_dataframe(filtered_df2)

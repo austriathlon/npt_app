@@ -37,37 +37,37 @@ st.set_page_config(layout="wide")
 pd.options.mode.copy_on_write = True
 
 # Custom CSS to increase the font size of the selectbox label
-# st.markdown(
-#     """
-#     <style>
-#     /* Reduce the margin below the custom label */
-#     .ststSubheader {
-#         margin-bottom: -1rem;  /* Adjust this value as needed */
-#     }
-#     /* Adjust the spacing of the selectbox */
-#     div[data-baseweb="select"] {
-#         margin-top: -1.5rem;  /* Adjust this value as needed */
-#     }
-#     /* Adjust the sidebar width */
-#     .css-1d391kg {
-#         width: 180px;  /* Adjust the value as needed */
-#     }
-#     .title-container {
-#         display: flex;
-#         align-items: center;
-#         justify-content: center;
-#     }
-#     .title-text {
-#         flex-grow: 1;
-#         text-align: center;
-#     }
-#     .title-image {
-#         margin-right: 0px;  /* Adjust the spacing between the image and the title */
-#     }
-#     </style>
-#     """,
-#     unsafe_allow_html=True
-# )
+st.markdown(
+    """
+    <style>
+    /* Reduce the margin below the custom label */
+    .ststSubheader {
+        margin-bottom: -1rem;  /* Adjust this value as needed */
+    }
+    /* Adjust the spacing of the selectbox */
+    div[data-baseweb="select"] {
+        margin-top: -1.5rem;  /* Adjust this value as needed */
+    }
+    /* Adjust the sidebar width */
+    .css-1d391kg {
+        width: 180px;  /* Adjust the value as needed */
+    }
+    .title-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .title-text {
+        flex-grow: 1;
+        text-align: center;
+    }
+    .title-image {
+        margin-right: 0px;  /* Adjust the spacing between the image and the title */
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # Create a layout with two columns
@@ -379,12 +379,12 @@ selected_gender = st.sidebar.radio('Select Gender', options=['All', 'Male', 'Fem
 st.markdown("</br>", unsafe_allow_html=True)    
 
 # st.markdown(
-#     """<style>
-# div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
-#     font-size: 18px;
-# }
-#     </style>
-#     """, unsafe_allow_html=True)
+    """<style>
+div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+    font-size: 18px;
+}
+    </style>
+    """, unsafe_allow_html=True)
 
 # Apply the "Australia" filter first
 df_filtered = race_rank1.copy()

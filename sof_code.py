@@ -77,8 +77,8 @@ with col1:
     st.image("austriathlon_icon.png", width=100)
 
 with col2:
-    #st.title("AusTriathlon NPT App")
-    st.markdown("<h1 style='text-align: center; '>AusTriathlon NPT Dashboard</h1>", unsafe_allow_html=True)
+    st.title("AusTriathlon NPT App")
+    #st.markdown("<h1 style='text-align: center; '>AusTriathlon NPT Dashboard</h1>", unsafe_allow_html=True)
 
 st.markdown("</br>", unsafe_allow_html=True)
 
@@ -378,13 +378,13 @@ show_australia = st.sidebar.checkbox('Show only Australians', value=True)
 selected_gender = st.sidebar.radio('Select Gender', options=['All', 'Male', 'Female'], index=0)
 st.markdown("</br>", unsafe_allow_html=True)    
 
-st.markdown(
-    """<style>
-div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
-    font-size: 18px;
-}
-    </style>
-    """, unsafe_allow_html=True)
+# st.markdown(
+#     """<style>
+# div[class*="stRadio"] > label > div[data-testid="stMarkdownContainer"] > p {
+#     font-size: 18px;
+# }
+#     </style>
+#     """, unsafe_allow_html=True)
 
 # Apply the "Australia" filter first
 df_filtered = race_rank1.copy()

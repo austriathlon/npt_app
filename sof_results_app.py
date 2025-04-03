@@ -50,7 +50,7 @@ st.markdown(
     }
     /* Adjust the sidebar width */
     .css-1d391kg {
-        width: 140px;  /* Adjust the value as needed */
+        width: 180px;  /* Adjust the value as needed */
     }
     .title-container {
         display: flex;
@@ -99,12 +99,20 @@ engine = create_engine(
 )
 
 # Query the database and load the data into a DataFrame
+
 query = """
-SELECT *
+SELECT program_id, event_id, program_date, program_name, race_level, 
+       race_distance_calculated, event_title, athlete_id, athlete_title, 
+       athlete_noc, rank, total_time, athlete_gender, splits, leg, secs_behind
 FROM INDIVIDUAL_RESULT
 WHERE program_date BETWEEN DATEADD(year, -1, CURRENT_DATE) AND CURRENT_DATE
 """
-data = pd.read_sql(query, engine)
+@st.cache_data
+def load_data(query):
+    return pd.read_sql(query, engine)
+
+data = load_data(query)
+#data = pd.read_sql(query, engine)
 
 # Clean column names
 data=clean_column_names(data)
@@ -145,7 +153,14 @@ query_ranking_world_men = """
 SELECT *
 FROM RANKING_WORLD_MEN
 """
-ranking_world_men_data = pd.read_sql(query_ranking_world_men, engine)
+
+@st.cache_data
+def load_data(query):
+    return pd.read_sql(query_ranking_world_men, engine)
+
+ranking_world_men_data = load_data(query)
+
+#ranking_world_men_data = pd.read_sql(query_ranking_world_men, engine)
 ranking_world_men_data = clean_column_names(ranking_world_men_data)
 
 ranking_world_men_data = (
@@ -211,7 +226,14 @@ query_ranking_world_women = """
 SELECT *
 FROM RANKING_WORLD_WOMEN
 """
-ranking_world_women_data = pd.read_sql(query_ranking_world_women, engine)
+
+@st.cache_data
+def load_data(query):
+    return pd.read_sql(query_ranking_world_women, engine)
+
+ranking_world_women_data = load_data(query)
+
+#ranking_world_women_data = pd.read_sql(query_ranking_world_women, engine)
 ranking_world_women_data = clean_column_names(ranking_world_women_data)
 
 ranking_world_women_data = (
@@ -455,12 +477,6 @@ table_data = table_data.rename(columns=columns_to_rename)
 # Format the 'Date' column to display only year-month-day
 table_data['Date'] = pd.to_datetime(table_data['Date'], format='mixed').dt.strftime('%Y-%m-%d')
 
-display_columns_table1 = [
-    'Race', 'Date', 'Program', 'Race Rank', 'World Rank', 'QOF Score', 
-    'Class', 'NPT Score'
-]
-#display_data = table_data[display_columns]
-
 # Create tabs
 tab1, tab2, tab3 = st.tabs(["NPT Individual Results", "NPT Top 100", "Race Results"])
 
@@ -480,7 +496,7 @@ with tab1:
         st.subheader("Results Table")
         
         # Display the filtered DataFrame
-        st.dataframe(filtered_df[display_columns_table1], use_container_width=True, hide_index=True)
+        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
         st.markdown("</br>", unsafe_allow_html=True)
 
         # Define custom colors for the levels
@@ -492,6 +508,8 @@ with tab1:
         }
 
         # Create the Plotly plot
+        #plot_data = filtered_df[['NPT Score', 'Race Rank', 'Race', 'Class', 'QOF Score']].copy()
+
         st.subheader("Results Graph")
         fig = px.bar(
             filtered_df,
@@ -645,7 +663,7 @@ with tab3:
     )
 
     display_columns_table2 = ['Race', 'Date', 'Program', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']
-    
+
         # Select box for choosing a name
     if filtered_names:  # Only show the selectbox if there are names available
         #selected_name = st.sidebar.selectbox('test',filtered_names, index=default_index, label_visibility='hidden')

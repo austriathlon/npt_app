@@ -345,17 +345,17 @@ race_rank_filtered = race_rank[
 
 # Define the conditions and choices for the case_when equivalent
 conditions = [
-    race_rank_filtered['race_level'].str.contains("olympic games"),
-    race_rank_filtered['race_level'].str.contains("grand final"),
+    race_rank_filtered['race_level'].str.contains("olympic games", case=False, na=False),
+    race_rank_filtered['race_level'].str.contains("grand final", case=False, na=False),
     race_rank_filtered['race_level'] == "world championship finals",
-    race_rank_filtered['event_title'].str.contains("world triathlon championship series"),
-    race_rank_filtered['event_title'].str.contains("commonwealth games"),
-    race_rank_filtered['event_title'].str.contains("world triathlon cup"),
-    race_rank_filtered['event_title'].str.contains("u23 world championships"),
-    race_rank_filtered['event_title'].str.contains("oceania championships"),
+    race_rank_filtered['event_title'].str.contains("world triathlon championship series", case=False, na=False),
+    race_rank_filtered['event_title'].str.contains("commonwealth games", case=False, na=False),
+    race_rank_filtered['event_title'].str.contains("world triathlon cup", case=False, na=False),
+    race_rank_filtered['event_title'].str.contains("u23 world championships", case=False, na=False),
+    race_rank_filtered['event_title'].str.contains("oceania championships", case=False, na=False),
     race_rank_filtered['race_level'] == "regional championships",
-    race_rank_filtered['race_level'].str.contains("continental|junior world championships"),
-    race_rank_filtered['race_level'].str.contains("continental")
+    race_rank_filtered['race_level'].str.contains("continental|junior world championships", case=False, na=False),
+    race_rank_filtered['race_level'].str.contains("continental", case=False, na=False)
 ]
 
 choices = ["A", "A", "A", "B", "B", "C", "C", "C", "C", "D", "D"]

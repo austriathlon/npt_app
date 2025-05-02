@@ -124,6 +124,8 @@ data['race_level'] = np.where(data['event_title'].str.contains('olympic games', 
 data['race_level'] = np.where(data['event_title'].str.contains('olympic games test event', case=False, na=False), 'olympic qualification', data['race_level'])
 data['race_level'] = np.where(data['event_title'].str.contains('commonwealth games', case=False, na=False), 'commonwealth games', data['race_level'])
 data['race_level'] = np.where(data['race_level'].str.contains('major games', case=False, na=False), 'recognised games', data['race_level'])
+data['race_level'] = np.where(data['event_title'].str.contains('championship finals', case=False, na=False), 'world championships', data['race_level'])
+
 
 # Filter rows based on 'program_name'
 data = data[data['program_name'].isin(["elite women", "elite men", "u23 men", "u23 women", "junior men", "junior women"])]
@@ -346,7 +348,7 @@ race_rank_filtered = race_rank[
 # Define the conditions and choices for the case_when equivalent
 conditions = [
     race_rank_filtered['race_level'].str.contains("olympic games", case=False, na=False),
-    race_rank_filtered['race_level'].str.contains("grand final", case=False, na=False),
+    race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False),
     race_rank_filtered['race_level'] == "world championship finals",
     race_rank_filtered['event_title'].str.contains("world triathlon championship series", case=False, na=False),
     race_rank_filtered['event_title'].str.contains("commonwealth games", case=False, na=False),

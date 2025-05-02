@@ -193,15 +193,19 @@ ranking_world_men_data2 = ranking_world_men_data2.rename(columns={
 merged_data_male = pd.merge(
     data_male,
     ranking_world_men_data2,
-    how='left',
+    how='outer',
     left_on='athlete_id',
     right_on='ranking_athlete_id'
 )
 
 # Filter rows based on the date range
 merged_data_male = merged_data_male[
-    (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
-    (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
+    (
+        (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
+        (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
+    ) |
+    (merged_data_male['dbt_valid_from'].isna()) |
+    (merged_data_male['dbt_valid_to'].isna())
 ]
 
 # Clean column names
@@ -268,15 +272,18 @@ ranking_world_women_data2 = ranking_world_women_data2.rename(columns={
 merged_data_female = pd.merge(
     data_female,
     ranking_world_women_data2,
-    how='left',
+    how='outer',
     left_on='athlete_id',
     right_on='ranking_athlete_id'
 )
 
-# Filter rows based on the date range
 merged_data_female = merged_data_female[
-    (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
-    (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
+    (
+        (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
+        (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
+    ) |
+    (merged_data_female['dbt_valid_from'].isna()) |
+    (merged_data_female['dbt_valid_to'].isna())
 ]
 
 # Clean column names
@@ -337,7 +344,7 @@ race_rank = pd.concat([race_rank_female, race_rank_male], ignore_index=True)
 
 # Filter the DataFrame
 race_rank_filtered = race_rank[
-    ~race_rank['event_title'].str.contains("national") &
+    ~race_rank['event_title'].str.contains("national", case=False, na=False) &
     (race_rank['race_distance_calculated'] != "super sprint") &
     (race_rank['race_level'] != "age-group event")
 ]
@@ -348,19 +355,26 @@ race_rank_filtered = race_rank[
 # Define the conditions and choices for the case_when equivalent
 conditions = [
     race_rank_filtered['race_level'].str.contains("olympic games", case=False, na=False),
-    race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False),
-    race_rank_filtered['race_level'] == "world championship finals",
+    race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False) &
+    race_rank_filtered['program_name'].isin(["elite men", "elite women"]),
     race_rank_filtered['event_title'].str.contains("world triathlon championship series", case=False, na=False),
     race_rank_filtered['event_title'].str.contains("commonwealth games", case=False, na=False),
     race_rank_filtered['event_title'].str.contains("world triathlon cup", case=False, na=False),
-    race_rank_filtered['event_title'].str.contains("u23 world championships", case=False, na=False),
-    race_rank_filtered['event_title'].str.contains("oceania championships", case=False, na=False),
+    race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False) &
+    race_rank_filtered['program_name'].isin(["u23 men", "u23 women"]),
+    race_rank_filtered['race_level'] == "continental championships",
     race_rank_filtered['race_level'] == "regional championships",
-    race_rank_filtered['race_level'].str.contains("continental|junior world championships", case=False, na=False),
-    race_rank_filtered['race_level'].str.contains("continental", case=False, na=False)
+    race_rank_filtered['race_level'].str.contains("continental cup", case=False, na=False),
+    race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False) &
+    race_rank_filtered['program_name'].isin(["junior men", "junior women"]),
+    race_rank_filtered['race_level'].str.contains("continental championship", case=False, na=False) &
+    race_rank_filtered['program_name'].isin(["u23 men", "u23 women"]),
+    race_rank_filtered['race_level'].str.contains("continental championship", case=False, na=False) &
+    race_rank_filtered['program_name'].isin(["junior men", "junior women"]),
+    race_rank_filtered['race_level'].str.contains("junior continental", case=False, na=False)
 ]
 
-choices = ["A", "A", "A", "B", "B", "C", "C", "C", "C", "D", "D"]
+choices = ["A", "A", "B", "B", "C", "C", "D", "D", "D", "D", "D", "E", "E"]
 
 # Create the 'race_class' column using np.select
 race_rank_filtered['race_class'] = np.select(conditions, choices, default=None)

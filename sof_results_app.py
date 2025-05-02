@@ -312,7 +312,7 @@ def calculate_scores(df):
     df['top_50_count'] = df.groupby('program_id')['rank_cat'].transform('sum')
     
     # Calculate qof_score
-    df['qof_score'] = df['top_50_count'] * 2
+    df['qof_score'] = np.minimum(df['top_50_count'] * 2, 100)
     
     return df
 

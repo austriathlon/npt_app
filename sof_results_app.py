@@ -374,6 +374,12 @@ selected_columns = [
 ]
 race_rank1 = race_rank_joined[selected_columns]
 
+# This will remove duplicates of races ie devonport U23 and Elite
+race_rank1 = (
+    race_rank1.sort_values(by='value', ascending=False)  # Sort by 'value' in descending order
+    .drop_duplicates(subset=['athlete_title', 'event_title'], keep='first')  # Keep the first occurrence for each group
+)
+
 # Group by athlete_title and calculate rank_value
 race_rank1['rank_value'] = race_rank1.groupby('athlete_title')['value'].rank(method='first', ascending=False)
 

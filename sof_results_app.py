@@ -198,14 +198,13 @@ merged_data_male = pd.merge(
     right_on='ranking_athlete_id'
 )
 
-# Filter rows based on the date range
+# fill most recent rank 'date valid to' column from NA to todays date.
+merged_data_male['dbt_valid_to'] = merged_data_male['dbt_valid_to'].fillna(pd.Timestamp.today())
+
+
 merged_data_male = merged_data_male[
-    (
-        (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
-        (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
-    ) |
-    (merged_data_male['dbt_valid_from'].isna()) |
-    (merged_data_male['dbt_valid_to'].isna())
+    (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
+    (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
 ]
 
 # Clean column names
@@ -277,13 +276,12 @@ merged_data_female = pd.merge(
     right_on='ranking_athlete_id'
 )
 
+# fill most recent rank 'date valid to' column from NA to todays date.
+merged_data_female['dbt_valid_to'] = merged_data_female['dbt_valid_to'].fillna(pd.Timestamp.today())
+
 merged_data_female = merged_data_female[
-    (
-        (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
-        (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
-    ) |
-    (merged_data_female['dbt_valid_from'].isna()) |
-    (merged_data_female['dbt_valid_to'].isna())
+    (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
+    (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
 ]
 
 # Clean column names

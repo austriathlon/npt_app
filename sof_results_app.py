@@ -548,7 +548,17 @@ filtered_names = df_filtered[['athlete_title']].drop_duplicates().sort_values(by
 default_index = 0 if filtered_names else None  # Avoid errors if list is empty
 
 st.markdown("</br>", unsafe_allow_html=True)
-selected_name = st.sidebar.selectbox('Select Athlete',filtered_names, index=default_index, label_visibility='visible')
+#selected_name = st.sidebar.selectbox('Select Athlete',filtered_names, index=default_index, label_visibility='visible')
+
+# Set default to None (no athlete selected initially)
+selected_name = st.sidebar.selectbox(
+    'Select Athlete',
+    filtered_names,
+    index=None,
+    placeholder="To begin, please select an athlete"
+)
+
+st.markdown("</br>", unsafe_allow_html=True)
 
 # Select specific columns
 selected_columns = [

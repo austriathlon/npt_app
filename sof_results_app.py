@@ -165,6 +165,7 @@ ranking_world_men_data = load_data(query)
 #ranking_world_men_data = pd.read_sql(query_ranking_world_men, engine)
 ranking_world_men_data = clean_column_names(ranking_world_men_data)
 
+
 ranking_world_men_data = (
     ranking_world_men_data
     .assign(
@@ -180,9 +181,43 @@ ranking_world_men_data = (
 data2['program_date'] = pd.to_datetime(data2['program_date'])
 data_male = data2[data2['athlete_gender'] == 'male']
 
+# Select specific columns
+selected_columns = [
+    'ranking_category_name', 'ranking_name', 'world_rank', 'athlete_noc','athlete_title', 'athlete_id','dbt_valid_from', 'dbt_valid_to'
+]
+
+ranking_world_men_data = ranking_world_men_data[selected_columns]
+
+# Read in the 4 CSV files
+csv1 = pd.read_csv('api_rank_data_male_feb1926.csv')
+csv2 = pd.read_csv('api_rank_data_male_mar0310.csv')
+csv3 = pd.read_csv('api_rank_data_male_mar1724.csv')
+csv4 = pd.read_csv('api_rank_data_male_april0108.csv')
+
+# Combine the CSVs into one DataFrame
+csv_combined = pd.concat([csv1, csv2, csv3, csv4], ignore_index=True)
 
 
-ranking_world_men_data2 = ranking_world_men_data.drop(columns=['athlete_title', 'athlete_noc', 'athlete_gender'])
+# this code fixes the csv files so they match the ranking data from snowflake
+from pandas import to_datetime
+from datetime import timedelta
+
+csv_combined['dbt_valid_from'] = pd.to_datetime(csv_combined['published'], format='mixed').dt.date
+csv_combined['dbt_valid_from'] = pd.to_datetime(csv_combined['dbt_valid_from'])
+csv_combined['dbt_valid_to'] = csv_combined['dbt_valid_from'] + pd.Timedelta(days=7)
+
+csv_combined = csv_combined.rename(columns={
+    'rank': 'world_rank',
+    'ranking_cat_name': 'ranking_category_name'
+})
+csv_combined = csv_combined[
+    ['ranking_category_name', 'ranking_name', 'world_rank', 'athlete_noc', 'athlete_title', 'athlete_id', 'dbt_valid_from', 'dbt_valid_to']
+]
+#st.write(csv_combined)
+#Append rows to data_female
+ranking_world_men_data2 = pd.concat([ranking_world_men_data, csv_combined], ignore_index=True)
+#st.write(ranking_world_men_data2)
+ranking_world_men_data2 = ranking_world_men_data2.drop(columns=['athlete_title', 'athlete_noc'])
 
 ranking_world_men_data2 = ranking_world_men_data2.rename(columns={
     'rank': 'world_rank',
@@ -230,7 +265,7 @@ merged_data_male = merged_data_male[selected_columns]
 query_ranking_world_women = """
 SELECT *
 FROM RANKING_WORLD_WOMEN
-"""
+""" 
 
 @st.cache_data
 def load_data(query):
@@ -238,8 +273,11 @@ def load_data(query):
 
 ranking_world_women_data = load_data(query)
 
+
+
 #ranking_world_women_data = pd.read_sql(query_ranking_world_women, engine)
 ranking_world_women_data = clean_column_names(ranking_world_women_data)
+
 
 ranking_world_women_data = (
     ranking_world_women_data
@@ -255,12 +293,45 @@ ranking_world_women_data = (
 
 data_female = data2[data2['athlete_gender'] == 'female']
 
+# Select specific columns
+selected_columns = [
+    'ranking_category_name', 'ranking_name', 'world_rank', 'athlete_noc','athlete_title', 'athlete_id','dbt_valid_from', 'dbt_valid_to'
+]
+
+ranking_world_women_data = ranking_world_women_data[selected_columns]
+
+# Read in the 4 CSV files
+csv1 = pd.read_csv('api_rank_data_female_feb1926.csv')
+csv2 = pd.read_csv('api_rank_data_female_mar0310.csv')
+csv3 = pd.read_csv('api_rank_data_female_mar1724.csv')
+csv4 = pd.read_csv('api_rank_data_female_april0108.csv')
+
+# Combine the CSVs into one DataFrame
+csv_combined = pd.concat([csv1, csv2, csv3, csv4], ignore_index=True)
 
 
+# this code fixes the csv files so they match the ranking data from snowflake
+from pandas import to_datetime
+from datetime import timedelta
 
-# Merge data_male with ranking_world_men_data on athlete_id
+csv_combined['dbt_valid_from'] = pd.to_datetime(csv_combined['published'], format='mixed').dt.date
+csv_combined['dbt_valid_from'] = pd.to_datetime(csv_combined['dbt_valid_from'])
+csv_combined['dbt_valid_to'] = csv_combined['dbt_valid_from'] + pd.Timedelta(days=7)
 
-ranking_world_women_data2 = ranking_world_women_data.drop(columns=['athlete_title', 'athlete_noc', 'athlete_gender'])
+csv_combined = csv_combined.rename(columns={
+    'rank': 'world_rank',
+    'ranking_cat_name': 'ranking_category_name'
+})
+csv_combined = csv_combined[
+    ['ranking_category_name', 'ranking_name', 'world_rank', 'athlete_noc', 'athlete_title', 'athlete_id', 'dbt_valid_from', 'dbt_valid_to']
+]
+
+#Append rows to data_female
+ranking_world_women_data = pd.concat([ranking_world_women_data, csv_combined], ignore_index=True)
+
+# Merge data_female with ranking_world_woen_data on athlete_id
+
+ranking_world_women_data2 = ranking_world_women_data.drop(columns=['athlete_title', 'athlete_noc'])
 
 ranking_world_women_data2 = ranking_world_women_data2.rename(columns={
     'rank': 'world_rank',
@@ -278,6 +349,7 @@ merged_data_female = pd.merge(
 
 # fill most recent rank 'date valid to' column from NA to todays date.
 merged_data_female['dbt_valid_to'] = merged_data_female['dbt_valid_to'].fillna(pd.Timestamp.today())
+
 
 merged_data_female = merged_data_female[
     (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
@@ -511,69 +583,70 @@ table_data['Date'] = pd.to_datetime(table_data['Date'], format='mixed').dt.strft
 tab1, tab2, tab3 = st.tabs(["NPT Individual Results", "NPT Top 100", "Race Results"])
 
 with tab1:
-    
-
-    # Select box for choosing a name
-    if filtered_names:  # Only show the selectbox if there are names available
-        st.markdown("</br>", unsafe_allow_html=True)
-        # Filter dataset based on selected name
-        filtered_df = table_data[table_data['Athlete'] == selected_name]
-
-        # Convert a specific column to upper case
-        filtered_df['Country'] = filtered_df['Country'].str.upper()
-
-        # Display the filtered athlete ratings to ensure the filtering is working correctly
-        st.subheader("Results Table")
-        
-        # Display the filtered DataFrame
-        st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-        st.markdown("</br>", unsafe_allow_html=True)
-
-        # Define custom colors for the levels
-        color_discrete_map = {
-        "A": "#F2B443",
-        "B": "#007DFF",
-        "C": "#803E80",
-        "D": "#FF0000"
-        }
-
-        # Create the Plotly plot
-        #plot_data = filtered_df[['NPT Score', 'Race Rank', 'Race', 'Class', 'QOF Score']].copy()
-
-        st.subheader("Results Graph")
-        fig = px.bar(
-            filtered_df,
-            x='NPT Score',
-            y='Race',
-            color='Class',
-            text='QOF Score',
-            #labels={'value': 'NPT Score', 'event_title': '', 'race_class': 'Class'},
-            custom_data=['Race Rank', 'World Rank'],
-            color_discrete_map=color_discrete_map,
-            category_orders={"Class": ["A", "B", "C", "D"]}
-        )
-        fig.update_traces(
-            hovertemplate='<b>Race Rank:</b> %{customdata[0]}<br><b>World Rank:</b> %{customdata[1]}<extra></extra>'
-        )
-        fig.update_layout(
-            xaxis=dict(range=[0, 1250]),
-            yaxis=dict(categoryorder='total ascending'),
-            xaxis_title="NPT Score",
-            yaxis_title="",
-            legend_title="Class",
-            bargap=0.2,
-            plot_bgcolor='rgba(0,0,0,0)',
-            xaxis_showgrid=True,
-            yaxis_showgrid=True,
-            xaxis_gridwidth=0.5,
-            yaxis_gridwidth=0.5,
-            xaxis_gridcolor='gray',
-            yaxis_gridcolor='gray'
-        )
-        st.plotly_chart(fig, use_container_width=True)
-
+    if not selected_name:
+        st.info("To begin, please select an athlete from the sidebar.")
     else:
-        st.warning("No names available based on the selected filters.")
+        # Select box for choosing a name
+        if filtered_names:  # Only show the selectbox if there are names available
+            st.markdown("</br>", unsafe_allow_html=True)
+            # Filter dataset based on selected name
+            filtered_df = table_data[table_data['Athlete'] == selected_name]
+
+            # Convert a specific column to upper case
+            filtered_df['Country'] = filtered_df['Country'].str.upper()
+    
+            # Display the filtered athlete ratings to ensure the filtering is working correctly
+            st.subheader("Results Table")
+            
+            # Display the filtered DataFrame
+            st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+            st.markdown("</br>", unsafe_allow_html=True)
+    
+            # Define custom colors for the levels
+            color_discrete_map = {
+            "A": "#F2B443",
+            "B": "#007DFF",
+            "C": "#803E80",
+            "D": "#FF0000"
+            }
+    
+            # Create the Plotly plot
+            #plot_data = filtered_df[['NPT Score', 'Race Rank', 'Race', 'Class', 'QOF Score']].copy()
+    
+            st.subheader("Results Graph")
+            fig = px.bar(
+                filtered_df,
+                x='NPT Score',
+                y='Race',
+                color='Class',
+                text='QOF Score',
+                #labels={'value': 'NPT Score', 'event_title': '', 'race_class': 'Class'},
+                custom_data=['Race Rank', 'World Rank'],
+                color_discrete_map=color_discrete_map,
+                category_orders={"Class": ["A", "B", "C", "D"]}
+            )
+            fig.update_traces(
+                hovertemplate='<b>Race Rank:</b> %{customdata[0]}<br><b>World Rank:</b> %{customdata[1]}<extra></extra>'
+            )
+            fig.update_layout(
+                xaxis=dict(range=[0, 1250]),
+                yaxis=dict(categoryorder='total ascending'),
+                xaxis_title="NPT Score",
+                yaxis_title="",
+                legend_title="Class",
+                bargap=0.2,
+                plot_bgcolor='rgba(0,0,0,0)',
+                xaxis_showgrid=True,
+                yaxis_showgrid=True,
+                xaxis_gridwidth=0.5,
+                yaxis_gridwidth=0.5,
+                xaxis_gridcolor='gray',
+                yaxis_gridcolor='gray'
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        else:
+            st.warning("No names available based on the selected filters.")
 
 with tab2:
     

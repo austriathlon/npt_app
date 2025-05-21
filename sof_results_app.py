@@ -1,12 +1,3 @@
-#!/Users/wadehobbs/Python_VS/wades_venv/bin/python
-# coding: utf-8
-
-## Set working directory
-# cd /Users/wadehobbs/Python_VS
-## Set the kernel to the virtual environment
-# source wades_venv/bin/activate
-
-
 import numpy as np
 import snowflake.connector
 from sqlalchemy import create_engine
@@ -786,12 +777,4 @@ with tab3:
         
         # Display the filtered DataFrame
         st.dataframe(filtered_df2[display_columns_table2], use_container_width=True, hide_index=True)
-        #st.write(filtered_df2.to_html(index=False), unsafe_allow_html=True)
-        # Display the filtered DataFrame using AgGrid
-        # gb = GridOptionsBuilder.from_dataframe(filtered_df2)
-        # gb.configure_pagination(paginationAutoPageSize=False)  # Enable pagination
-        # gb.configure_side_bar()  # Enable a sidebar
-        # gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, aggFunc='sum', editable=True)
-        # gridOptions = gb.build()
 
-        # AgGrid(filtered_df2, gridOptions=gridOptions, enable_enterprise_modules=True)

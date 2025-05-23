@@ -614,6 +614,8 @@ table_data['Date'] = pd.to_datetime(table_data['Date'], format='mixed').dt.strft
 # Create tabs
 tab1, tab2, tab3 = st.tabs(["NPT Individual Results", "NPT Top 100", "Race Results"])
 
+import datetime
+
 with tab1:
     if not selected_name:
         st.info("To begin, please select an athlete from the sidebar.")

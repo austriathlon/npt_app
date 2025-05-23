@@ -93,7 +93,7 @@ engine = create_engine(
 
 query = """
 SELECT program_id, event_id, program_date, program_name, race_level, 
-       race_distance_calculated, event_title, athlete_id, athlete_title, 
+       race_distance_calculated, event_title, athlete_id, athlete_title, athlete_yob,
        athlete_noc, rank, total_time, athlete_gender, splits, leg, secs_behind
 FROM INDIVIDUAL_RESULT
 WHERE program_date BETWEEN DATEADD(year, -1, CURRENT_DATE) AND CURRENT_DATE
@@ -131,7 +131,7 @@ data = data[~data['event_title'].str.contains("long distance", case=False, na=Fa
 # Select specific columns
 data2 = data[['program_id', 'event_id', 'program_date', 'program_name', 'race_level', 
              'race_distance_calculated', 'event_title', 'athlete_id', 'athlete_title', 
-             'athlete_noc','rank', 'total_time', 'athlete_gender']]
+             'athlete_noc','rank', 'total_time', 'athlete_gender', 'athlete_yob']]
 
 # Remove duplicate rows
 data2 = data2.drop_duplicates()
@@ -255,7 +255,7 @@ selected_columns = [
     'program_id', 'event_id', 'program_date', 'program_name', 'race_level', 
     'race_distance_calculated', 'event_title', 'athlete_id', 'athlete_title', 
     'rank', 'athlete_gender', 'ranking_category_name', 'ranking_name', 'world_rank', 
-    'athlete_noc'
+    'athlete_noc', 'athlete_yob'
 ]
 
 merged_data_male = merged_data_male[selected_columns]
@@ -383,7 +383,7 @@ selected_columns = [
     'program_id', 'event_id', 'program_date', 'program_name', 'race_level', 
     'race_distance_calculated', 'event_title', 'athlete_id', 'athlete_title', 
     'rank', 'athlete_gender', 'ranking_category_name', 'ranking_name', 'world_rank', 
-    'athlete_noc'
+    'athlete_noc', 'athlete_yob'
 ]
 
 merged_data_female = merged_data_female[selected_columns]
@@ -485,7 +485,7 @@ race_rank_joined = pd.merge(race_rank_filtered, score_table, how='left', left_on
 # Select specific columns
 selected_columns = [
     'event_title', 'program_date', 'program_name', 'race_level', 'race_distance_calculated', 
-    'athlete_title', 'athlete_noc', 'athlete_gender', 'rank', 'world_rank', 'qof_score', 
+    'athlete_title', 'athlete_noc', 'athlete_gender', 'athlete_yob', 'rank', 'world_rank', 'qof_score', 
     'race_class', 'value'
 ]
 race_rank1 = race_rank_joined[selected_columns]
@@ -583,7 +583,7 @@ st.markdown("</br>", unsafe_allow_html=True)
 # Select specific columns
 selected_columns = [
     'event_title', 'race_distance_calculated', 'program_date', 'program_name', 
-    'athlete_title', 'athlete_noc', 'rank', 'world_rank', 'qof_score', 
+    'athlete_title', 'athlete_noc', 'athlete_yob', 'rank', 'world_rank', 'qof_score', 
     'race_class', 'value'
 ]
 table_data = df_filtered[selected_columns]
@@ -599,6 +599,7 @@ columns_to_rename = {
     'program_name': 'Program',
     'athlete_title': 'Athlete',
     'athlete_noc': 'Country',
+    'athlete_yob': 'Year of Birth',
     'rank': 'Race Rank',
     'world_rank': 'World Rank',
     'qof_score': 'QOF Score',
@@ -629,8 +630,59 @@ with tab1:
             # Display the filtered athlete ratings to ensure the filtering is working correctly
             st.subheader("Results Table")
             
-            # Display the filtered DataFrame
-            st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+            # --- Highlighting function ---
+            def highlight_top_races(df):
+               # Defensive: If df is empty, return no highlight
+               if df.empty:
+                   return df.style.apply(lambda row: [''] * len(row), axis=1)
+
+               # Get current year
+               current_year = datetime.datetime.now().year
+               yob = df['Year of Birth'].iloc[0]
+
+               # Get indices for highlighting
+               highlight_idx = []
+
+               # Case 1: Age >= 23 (yob <= current_year - 23)
+               if yob < current_year - 23:
+                   std = df[df['Distance'].str.lower() == 'standard']
+                   top2_std_idx = std.nlargest(2, 'NPT Score').index.tolist()
+                   rest = df.drop(top2_std_idx)
+                   top_other_idx = rest['NPT Score'].idxmax() if not rest.empty else None
+                   highlight_idx = top2_std_idx
+                   if top_other_idx is not None:
+                       highlight_idx.append(top_other_idx)
+
+               # Case 2: 21 <= Age < 23 (current_year - 23 < yob <= current_year - 21)
+               elif (current_year - 23) <= yob <= (current_year - 21):
+                   std = df[df['Distance'].str.lower() == 'standard']
+                   top_std_idx = std['NPT Score'].idxmax() if not std.empty else None
+                   rest = df.drop([top_std_idx]) if top_std_idx is not None else df
+                   top2_other_idx = rest.nlargest(2, 'NPT Score').index.tolist()
+                   highlight_idx = []
+                   if top_std_idx is not None:
+                       highlight_idx.append(top_std_idx)
+                   highlight_idx.extend(top2_other_idx)
+
+               # Case 3: Age < 20 (yob > current_year - 20)
+               elif yob >= current_year - 20:
+                   highlight_idx = df.nlargest(3, 'NPT Score').index.tolist()
+
+               # Default: No highlight
+               else:
+                   highlight_idx = []
+
+               def highlight_row(row):
+                   if row.name in highlight_idx:
+                       return ['background-color: #d6f5d6'] * len(row)
+                   else:
+                       return [''] * len(row)
+
+               return df.style.apply(highlight_row, axis=1)
+
+            # --- Use the function and display ---
+            styled_df = highlight_top_races(filtered_df)
+            st.dataframe(styled_df, use_container_width=True, hide_index=True)
             st.markdown("</br>", unsafe_allow_html=True)
     
             # Define custom colors for the levels

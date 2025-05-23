@@ -470,7 +470,8 @@ conditions = [
         race_rank_filtered['race_level'].str.contains("world championships", case=False, na=False) &
         race_rank_filtered['program_name'].isin(["junior men", "junior women"])
     ),
-    race_rank_filtered['race_level'].str.contains("junior continental", case=False, na=False)
+    race_rank_filtered['race_level'].str.contains("junior continental", case=False, na=False) |
+    race_rank_filtered['race_level'].str.contains("continental junior", case=False, na=False)
 ]
 
 choices = ["A", "A", "B", "B", "C", "C", "E", "D", "D", "D", "D", "D", "E"]

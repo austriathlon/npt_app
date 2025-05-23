@@ -792,13 +792,25 @@ with tab3:
     # Convert 'Total Time' and all columns between 'Total Time' and 'TBF Run' to datetime format and then to string format
     columns_to_convert = table_data_wide2.loc[:, 'Total Time':'TBF Run'].columns
 
-    # Fill all NaN values with 0 before formatting
-    table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].fillna(0)
+    # # Fill all NaN values with 0 before formatting
+    # table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].fillna(0)
 
-    #convert all times to h:m:s
-    table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].apply(
-        lambda x: pd.to_datetime(x, unit='s').dt.strftime('%H:%M:%S')
-    )
+    # #convert all times to h:m:s
+    # table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].apply(
+    #     lambda x: pd.to_datetime(x, unit='s').dt.strftime('%H:%M:%S')
+    # )
+
+    for col in columns_to_convert:
+        if pd.api.types.is_numeric_dtype(table_data_wide2[col]):
+            # Convert numeric seconds to datetime, then to string, then replace NaT with empty string
+            table_data_wide2[col] = (
+                pd.to_datetime(table_data_wide2[col], unit='s', errors='coerce')
+                .dt.strftime('%H:%M:%S')
+                .replace('NaT', '')
+            )
+        else:
+            # If already string or object, just fillna with empty string
+            table_data_wide2[col] = table_data_wide2[col].fillna('')
 
     display_columns_table2 = ['Race', 'Date', 'Program', 'Distance', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']
 

@@ -227,11 +227,25 @@ merged_data_male = pd.merge(
 # fill most recent rank 'date valid to' column from NA to todays date.
 merged_data_male['dbt_valid_to'] = merged_data_male['dbt_valid_to'].fillna(pd.Timestamp.today())
 
+# Find the earliest dbt_valid_from for each athlete
+earliest_valid_from = merged_data_male.groupby('athlete_id')['dbt_valid_from'].transform('min')
 
+#This filters world rank to be within the valid from and valid to dates of the program date and if there is no valid from date it will include races before the earliest valid from date
 merged_data_male = merged_data_male[
-    (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
-    (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
+    (
+        (merged_data_male['program_date'] >= merged_data_male['dbt_valid_from']) &
+        (merged_data_male['program_date'] <= merged_data_male['dbt_valid_to'])
+    )
+    #| (merged_data_female['dbt_valid_from'].isna())
+    | (merged_data_male['program_date'] < earliest_valid_from)
 ]
+
+# If the race date is earlier than the earliest world rank date, set world rank to NaN
+merged_data_male['world_rank'] = np.where(
+    merged_data_male['program_date'] < merged_data_male['dbt_valid_from'],
+    np.nan,
+    merged_data_male['world_rank']
+)
 
 # Clean column names
 merged_data_male = clean_column_names(merged_data_male)
@@ -342,10 +356,24 @@ merged_data_female = pd.merge(
 merged_data_female['dbt_valid_to'] = merged_data_female['dbt_valid_to'].fillna(pd.Timestamp.today())
 
 
+# Find the earliest dbt_valid_from for each athlete
+earliest_valid_from = merged_data_female.groupby('athlete_id')['dbt_valid_from'].transform('min')
+
 merged_data_female = merged_data_female[
-    (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
-    (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
+    (
+        (merged_data_female['program_date'] >= merged_data_female['dbt_valid_from']) &
+        (merged_data_female['program_date'] <= merged_data_female['dbt_valid_to'])
+    )
+    #| (merged_data_female['dbt_valid_from'].isna())
+    | (merged_data_female['program_date'] < earliest_valid_from)
 ]
+
+# After filtering merged_data_female
+merged_data_female['world_rank'] = np.where(
+    merged_data_female['program_date'] < merged_data_female['dbt_valid_from'],
+    np.nan,
+    merged_data_female['world_rank']
+)
 
 # Clean column names
 merged_data_female = clean_column_names(merged_data_female)
@@ -522,7 +550,7 @@ st.sidebar.markdown("<br>", unsafe_allow_html=True)
 df_filtered = race_rank1.copy()
 
 # Convert strings to Title case
-string_columns = ['event_title', 'program_name', 'athlete_title', 'athlete_noc', 'race_class']
+string_columns = ['event_title', 'race_distance_calculated', 'program_name', 'athlete_title', 'athlete_noc', 'race_class']
 for col in string_columns:
     df_filtered[col] = df_filtered[col].fillna('').str.title()
 
@@ -553,7 +581,7 @@ st.markdown("</br>", unsafe_allow_html=True)
 
 # Select specific columns
 selected_columns = [
-    'event_title', 'program_date', 'program_name', 
+    'event_title', 'race_distance_calculated', 'program_date', 'program_name', 
     'athlete_title', 'athlete_noc', 'rank', 'world_rank', 'qof_score', 
     'race_class', 'value'
 ]
@@ -565,6 +593,7 @@ table_data = table_data.sort_values(by='value', ascending=False)
 
 columns_to_rename = {
     'event_title': 'Race',
+    'race_distance_calculated': 'Distance',
     'program_date': 'Date',
     'program_name': 'Program',
     'athlete_title': 'Athlete',
@@ -705,7 +734,7 @@ with tab3:
 
 
     # Convert strings to Title case
-    string_columns = ['event_title', 'program_name', 'athlete_title', 'athlete_noc', 'athlete_gender']
+    string_columns = ['event_title', 'program_name', 'race_distance_calculated', 'athlete_title', 'athlete_noc', 'athlete_gender']
     for col in string_columns:
         df_filtered[col] = df_filtered[col].fillna('').str.title()
 
@@ -722,7 +751,7 @@ with tab3:
 
     # Select specific columns
     selected_columns = [
-        'event_title', 'program_date', 'program_name', 
+        'event_title', 'program_date', 'program_name', 'race_distance_calculated', 
         'athlete_title', 'athlete_noc', 'rank', 'total_time',
         'leg', 'splits', 'secs_behind'
     ]
@@ -730,7 +759,7 @@ with tab3:
 
     # melt the table to be longer so splits and secs behind have their own columns
     table_data_wide = table_data.pivot_table(
-        index=['event_title', 'program_date', 'program_name', 'athlete_title', 'athlete_noc', 'rank', 'total_time'],
+        index=['event_title', 'program_date', 'program_name', 'race_distance_calculated', 'athlete_title', 'athlete_noc', 'rank', 'total_time'],
         columns='leg',
         values=['splits', 'secs_behind']
     )
@@ -744,6 +773,7 @@ with tab3:
     'event_title': 'Race',
     'program_date': 'Date',
     'program_name': 'Program',
+    'race_distance_calculated': 'Distance',
     'athlete_title': 'Athlete',
     'athlete_noc': 'Country',
     'rank': 'Rank',
@@ -758,7 +788,7 @@ with tab3:
     table_data_wide2 = table_data_wide.rename(columns=columns_to_rename)
 
     # Reordering columns using loc
-    table_data_wide2 = table_data_wide2.loc[:, ['Race', 'Date', 'Program', 'Athlete', 'Country', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']]
+    table_data_wide2 = table_data_wide2.loc[:, ['Race', 'Date', 'Program', 'Distance', 'Athlete', 'Country', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']]
     # Convert 'Total Time' and all columns between 'Total Time' and 'TBF Run' to datetime format and then to string format
     columns_to_convert = table_data_wide2.loc[:, 'Total Time':'TBF Run'].columns
 
@@ -766,7 +796,7 @@ with tab3:
         lambda x: pd.to_datetime(x, unit='s').dt.strftime('%H:%M:%S')
     )
 
-    display_columns_table2 = ['Race', 'Date', 'Program', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']
+    display_columns_table2 = ['Race', 'Date', 'Program', 'Distance', 'Rank', 'Total Time', 'Swim','TBF Swim', 'Bike', 'TBF Bike', 'Run','TBF Run']
 
         # Select box for choosing a name
     if filtered_names:  # Only show the selectbox if there are names available

@@ -680,7 +680,10 @@ with tab1:
                    else:
                        return [''] * len(row)
 
-               return df.style.apply(highlight_row, axis=1)
+               numeric_cols = df.select_dtypes(include=['number']).columns
+               styled = df.style.apply(highlight_row, axis=1).format({col: "{:.0f}" for col in numeric_cols})
+               return styled
+
 
             # --- Use the function and display ---
             styled_df = highlight_top_races(filtered_df)

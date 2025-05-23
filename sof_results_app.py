@@ -792,6 +792,10 @@ with tab3:
     # Convert 'Total Time' and all columns between 'Total Time' and 'TBF Run' to datetime format and then to string format
     columns_to_convert = table_data_wide2.loc[:, 'Total Time':'TBF Run'].columns
 
+    # Fill all NaN values with 0 before formatting
+    table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].fillna(0)
+
+    #convert all times to h:m:s
     table_data_wide2[columns_to_convert] = table_data_wide2[columns_to_convert].apply(
         lambda x: pd.to_datetime(x, unit='s').dt.strftime('%H:%M:%S')
     )

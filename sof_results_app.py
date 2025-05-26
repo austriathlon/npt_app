@@ -98,7 +98,7 @@ SELECT program_id, event_id, program_date, program_name, race_level,
 FROM INDIVIDUAL_RESULT
 WHERE program_date BETWEEN DATEADD(year, -1, CURRENT_DATE) AND CURRENT_DATE
 """
-@st.cache_data
+@st.cache_data(ttl=86400)
 def load_data(query):
     return pd.read_sql(query, engine)
 
@@ -147,7 +147,7 @@ SELECT *
 FROM RANKING_WORLD_MEN
 """
 
-@st.cache_data
+@st.cache_data(ttl=86400)
 def load_data(query):
     return pd.read_sql(query_ranking_world_men, engine)
 
@@ -272,7 +272,7 @@ SELECT *
 FROM RANKING_WORLD_WOMEN
 """ 
 
-@st.cache_data
+@st.cache_data(ttl=86400)
 def load_data(query):
     return pd.read_sql(query_ranking_world_women, engine)
 
@@ -611,6 +611,37 @@ table_data = table_data.rename(columns=columns_to_rename)
 # Format the 'Date' column to display only year-month-day
 table_data['Date'] = pd.to_datetime(table_data['Date'], format='mixed').dt.strftime('%Y-%m-%d')
 
+
+# get age-group specific NPT scores, function is used in tab 1 and 2 to get filtered NPT scores
+def get_highlight_indices(df):
+    """Return indices of rows that would be highlighted for a given athlete DataFrame."""
+    if df.empty:
+        return []
+    current_year = datetime.datetime.now().year
+    yob = df['Year of Birth'].iloc[0]
+    highlight_idx = []
+    if yob <= current_year - 23:
+        std = df[df['Distance'].str.lower() == 'standard']
+        top2_std_idx = std.nlargest(2, 'NPT Score').index.tolist()
+        rest = df.drop(top2_std_idx)
+        top_other_idx = rest['NPT Score'].idxmax() if not rest.empty else None
+        highlight_idx = top2_std_idx
+        if top_other_idx is not None:
+            highlight_idx.append(top_other_idx)
+    elif (current_year - 23) < yob <= (current_year - 21):
+        std = df[df['Distance'].str.lower() == 'standard']
+        top_std_idx = std['NPT Score'].idxmax() if not std.empty else None
+        rest = df.drop([top_std_idx]) if top_std_idx is not None else df
+        top2_other_idx = rest.nlargest(2, 'NPT Score').index.tolist()
+        highlight_idx = []
+        if top_std_idx is not None:
+            highlight_idx.append(top_std_idx)
+        highlight_idx.extend(top2_other_idx)
+    elif yob > current_year - 20:
+        highlight_idx = df.nlargest(3, 'NPT Score').index.tolist()
+    return highlight_idx
+
+
 # Create tabs
 tab1, tab2, tab3 = st.tabs(["NPT Individual Results", "NPT Top 100", "Race Results"])
 
@@ -632,58 +663,17 @@ with tab1:
             # Display the filtered athlete ratings to ensure the filtering is working correctly
             st.subheader("Results Table")
             
-            # --- Highlighting function ---
+             # --- Highlighting function ---
             def highlight_top_races(df):
-               # Defensive: If df is empty, return no highlight
-               if df.empty:
-                   return df.style.apply(lambda row: [''] * len(row), axis=1)
-
-               # Get current year
-               current_year = datetime.datetime.now().year
-               yob = df['Year of Birth'].iloc[0]
-
-               # Get indices for highlighting
-               highlight_idx = []
-
-               # Case 1: Age >= 23 (yob <= current_year - 23)
-               if yob < current_year - 23:
-                   std = df[df['Distance'].str.lower() == 'standard']
-                   top2_std_idx = std.nlargest(2, 'NPT Score').index.tolist()
-                   rest = df.drop(top2_std_idx)
-                   top_other_idx = rest['NPT Score'].idxmax() if not rest.empty else None
-                   highlight_idx = top2_std_idx
-                   if top_other_idx is not None:
-                       highlight_idx.append(top_other_idx)
-
-               # Case 2: 21 <= Age < 23 (current_year - 23 < yob <= current_year - 21)
-               elif (current_year - 23) <= yob <= (current_year - 21):
-                   std = df[df['Distance'].str.lower() == 'standard']
-                   top_std_idx = std['NPT Score'].idxmax() if not std.empty else None
-                   rest = df.drop([top_std_idx]) if top_std_idx is not None else df
-                   top2_other_idx = rest.nlargest(2, 'NPT Score').index.tolist()
-                   highlight_idx = []
-                   if top_std_idx is not None:
-                       highlight_idx.append(top_std_idx)
-                   highlight_idx.extend(top2_other_idx)
-
-               # Case 3: Age < 20 (yob > current_year - 20)
-               elif yob >= current_year - 20:
-                   highlight_idx = df.nlargest(3, 'NPT Score').index.tolist()
-
-               # Default: No highlight
-               else:
-                   highlight_idx = []
-
-               def highlight_row(row):
-                   if row.name in highlight_idx:
-                       return ['background-color: #d6f5d6'] * len(row)
-                   else:
-                       return [''] * len(row)
-
-               numeric_cols = df.select_dtypes(include=['number']).columns
-               styled = df.style.apply(highlight_row, axis=1).format({col: "{:.0f}" for col in numeric_cols})
-               return styled
-
+                highlight_idx = get_highlight_indices(df)
+                def highlight_row(row):
+                    if row.name in highlight_idx:
+                        return ['background-color: #d6f5d6'] * len(row)
+                    else:
+                        return [''] * len(row)
+                numeric_cols = df.select_dtypes(include=['number']).columns
+                styled = df.style.apply(highlight_row, axis=1).format({col: "{:.0f}" for col in numeric_cols})
+                return styled
 
             # --- Use the function and display ---
             styled_df = highlight_top_races(filtered_df)
@@ -737,32 +727,44 @@ with tab1:
             st.warning("No names available based on the selected filters.")
 
 with tab2:
-    
     # Filter rows where rank_value is less than or equal to 3
     top3perathlete = race_rank1[race_rank1['rank_value'] <= 3]
 
     # Create table of summed top 3 NPT scores for all athletes
     athlete_ratings = (
-    top3perathlete
-    .groupby(['athlete_noc', 'athlete_title', 'athlete_gender'], as_index=False)
-    .agg(score=('value', 'sum'))
-    .assign(rank=lambda df: df.groupby('athlete_gender')['score'].rank(method='min', ascending=False))
-    .loc[:, ['athlete_title', 'athlete_gender', 'athlete_noc', 'rank', 'score']]
-    .sort_values(by='score', ascending=False)
-    .reset_index(drop=True)
-
+        top3perathlete
+        .groupby(['athlete_noc', 'athlete_title', 'athlete_gender'], as_index=False)
+        .agg(score=('value', 'sum'))
+        .assign(rank=lambda df: df.groupby('athlete_gender')['score'].rank(method='min', ascending=False))
+        .loc[:, ['athlete_title', 'athlete_gender', 'athlete_noc', 'rank', 'score']]
+        .sort_values(by='score', ascending=False)
+        .reset_index(drop=True)
     )
-    
+
     columns_to_rename = {
-    'athlete_title': 'Athlete',
-    'athlete_gender': 'Gender',
-    'athlete_noc': 'Country',
-    'rank': 'NPT Rank',
-    'score': 'NPT Score'
+        'athlete_title': 'Athlete',
+        'athlete_gender': 'Gender',
+        'athlete_noc': 'Country',
+        'rank': 'NPT Rank',
+        'score': 'NPT Score'
     }
     athlete_ratings = athlete_ratings.rename(columns=columns_to_rename)
+    athlete_ratings['Athlete'] = athlete_ratings['Athlete'].str.strip().str.title()
+    table_data['Athlete'] = table_data['Athlete'].str.strip().str.title()
+    # --- Add column for sum of green-highlighted rows (Adjusted NPT Score) ---
+    def get_top_npt_sum(table_data):
+        results = {}
+        for athlete, group in table_data.groupby('Athlete'):
+            idx = get_highlight_indices(group)
+            results[athlete] = group.loc[idx, 'NPT Score'].sum()
+        return results
 
-    # Filter the top 100 athletes' scores based on selected gender
+    # Use the table_data DataFrame from earlier (with renamed columns)
+    top_npt_sum_dict = get_top_npt_sum(table_data)
+    
+    athlete_ratings['Adjusted NPT Score'] = athlete_ratings['Athlete'].map(top_npt_sum_dict)
+      
+    # Filter the top 100 athletes' scores based on selected gender and country
     top_100 = athlete_ratings.copy()
     if show_australia:
         top_100 = top_100[top_100['Country'] == 'aus']
@@ -771,17 +773,27 @@ with tab2:
 
     top_100_df = top_100.sort_values(by='NPT Score', ascending=False).head(100)
 
-    string_columns2 = ['Athlete','Gender', 'Country']
-
-    # Convert strings to Title case
+    string_columns2 = ['Athlete', 'Gender', 'Country']
     for col in string_columns2:
         top_100_df[col] = top_100_df[col].fillna('').str.title()
 
-    # Convert a specific column to upper case
     top_100_df['Country'] = top_100_df['Country'].str.upper()
 
     st.subheader("Top 100 NPT Scores")
     st.dataframe(top_100_df, use_container_width=True, hide_index=True)
+
+    st.markdown(
+    """
+    <br>
+    <span style="font-size: 1.1em;">
+    The <b>'Adjusted NPT Score'</b> column includes a minimum number of standard distance races for each age category as follows:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;- <b>Senior</b>: minimum 2 standard distance races to count towards total score.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;- <b>U23</b>: minimum 1 standard distance race to count towards total score; excluding 1st year U23 athlete who are transitioning from junior category.<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;- <b>Jnr</b>: no standard distance races required.
+    </span>
+    """,
+    unsafe_allow_html=True
+    )   
 
 with tab3:
     # Select specific columns

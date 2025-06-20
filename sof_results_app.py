@@ -637,7 +637,7 @@ def get_highlight_indices(df):
         if top_std_idx is not None:
             highlight_idx.append(top_std_idx)
         highlight_idx.extend(top2_other_idx)
-    elif yob > current_year - 20:
+    elif yob >= current_year - 20:
         highlight_idx = df.nlargest(3, 'NPT Score').index.tolist()
     return highlight_idx
 

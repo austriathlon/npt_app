@@ -154,7 +154,8 @@ data['program_date'] = pd.to_datetime(data['program_date'])
 # --- Place this at the very top of your sidebar filter section ---
 
 # Set default end date to today or latest in data
-default_end = min(pd.Timestamp.today().date(), data['program_date'].max().date())
+#default_end = min(pd.Timestamp.today().date(), data['program_date'].max().date())
+default_end = pd.Timestamp.today().date()
 future_limit = pd.Timestamp.today().date() + pd.DateOffset(years=1)
 
 # Use session state to store the selected end date
